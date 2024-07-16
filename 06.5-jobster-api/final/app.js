@@ -1,38 +1,42 @@
 require('dotenv').config();
 require('express-async-errors');
 
-const path = require('path');
-// extra security packages
-const helmet = require('helmet');
-const xss = require('xss-clean');
-
 const express = require('express');
 const app = express();
 
+const path = require('path');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+
 const connectDB = require('./db/connect');
 const authenticateUser = require('./middleware/authentication');
-// routers
 const authRouter = require('./routes/auth');
 const jobsRouter = require('./routes/jobs');
-// error handler
 const notFoundMiddleware = require('./middleware/not-found');
 const errorHandlerMiddleware = require('./middleware/error-handler');
 
-app.set('trust proxy', 1);
 
+const logger = (req, res, next) => {
+  const currentTime = new Date().toISOString();
+  console.log(`[${currentTime}] ${req.method} ${req.url}`);
+  next();
+};
+
+
+app.set('trust proxy', 1);
 app.use(express.static(path.resolve(__dirname, './client/build')));
 app.use(express.json());
 app.use(helmet());
-
 app.use(xss());
 
-// routes
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/jobs', authenticateUser, jobsRouter);
+app.use('/api/v1/auth', logger, authRouter);
+app.use('/api/v1/jobs', logger, authenticateUser, jobsRouter);
 
-app.get('*', (req, res) => {
+
+app.get('*', logger, (req, res) => {
   res.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
 });
+
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
@@ -46,8 +50,10 @@ const start = async () => {
       console.log(`Server is listening on port ${port}...`)
     );
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    process.exit(1); 
   }
 };
 
 start();
+

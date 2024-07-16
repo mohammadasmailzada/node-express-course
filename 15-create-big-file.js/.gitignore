@@ -1,0 +1,5 @@
+/node_modules
+.DS_Storenpm
+/content/big.txt
+answers/temporary/*
+!answers/temporary/.keep
